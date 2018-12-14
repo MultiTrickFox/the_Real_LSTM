@@ -1,6 +1,6 @@
 import The_Real_LSTM as gstm
-
 from torch.nn import Module
+
 from torch import optim, device, cuda
 from torch import save, load
 
@@ -9,15 +9,15 @@ device = device("cuda" if cuda.is_available() else "cpu")
 
 
 
-def make_model(hm_channels, vector_size, memory_size,network_struct=None):
+def make_model(hm_channels, vector_size, memory_size, network_structs=None):
 
-    if network_struct is None: network_struct = (
-        (int(memory_size * 3/5), int(memory_size * 4/5)),   # module : intermediate state
-        (int(memory_size * 3/5), int(memory_size * 4/5)),   # module : global state
-        (int(vector_size * 3/5), int(vector_size * 4/5)),   # module : global output
-    )
+    if network_structs is None: network_structs = [(
+        (int(memory_size * 3/5), int(memory_size * 4/5), memory_size),   # module : intermediate state
+        (int(memory_size * 3/5), int(memory_size * 4/5), memory_size),   # module : global state
+        (int(vector_size * 3/5), int(vector_size * 4/5), vector_size),   # module : global output
+    ) for _ in range(2)]
 
-    internal_model = gstm.create_model(network_struct, vector_size, memory_size, hm_channels)
+    internal_model = gstm.create_model(network_structs, vector_size, memory_size, hm_channels)
     internal_params = gstm.get_params(internal_model)
 
 
@@ -75,7 +75,8 @@ def load_session():
     if model is not None:
         mtorch = GSTM(model, params)
         meta = load('meta.pkl')
-        opt = make_optimizer(mtorch, 0.001)
+        # type = get_opt_type(meta)         # todo : unlock. : auto detect optimizer type.
+        opt = make_optimizer(mtorch, 0.1)
         opt.load_state_dict(meta)
 
     else: return None, None

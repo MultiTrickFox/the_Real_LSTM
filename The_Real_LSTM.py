@@ -7,24 +7,18 @@ max_prop_time = 55
 
 
 
-def create_model(network_struct, vector_size, storage_size, hm_vectors):
+def create_model(network_structs, vector_size, storage_size, hm_vectors):
 
-    network_struct = (
-        network_struct[0] + tuple([storage_size]),
-        network_struct[1] + tuple([storage_size]),
-        network_struct[2] + tuple([vector_size])
-    )
+    model = (create_enc_network(network_structs[0], hm_vectors, vector_size, storage_size),
+             create_dec_network(network_structs[1], hm_vectors, vector_size, storage_size)
+             )
 
-    return (create_enc_network(network_struct, hm_vectors),
-            create_dec_network(network_struct, hm_vectors))
+    return model
 
 
 
-def create_enc_network(network_struct, hm_vectors):
+def create_enc_network(network_struct, hm_vectors, vector_size, storage_size):
     encoder = []
-
-    storage_size = network_struct[1][-1]
-    vector_size = network_struct[-1][-1]
 
     # module : intermediate state
 
@@ -51,11 +45,8 @@ def create_enc_network(network_struct, hm_vectors):
     return encoder
 
 
-def create_dec_network(network_struct, hm_vectors):
+def create_dec_network(network_struct, hm_vectors, vector_size, storage_size):
     decoder = []
-
-    storage_size = network_struct[1][-1]
-    vector_size = network_struct[-1][-1]
 
     # module : intermediate state
 
@@ -287,6 +278,8 @@ def propogate_model(model, sequence, context=None, gen_seed=None, gen_iterations
 
     out_keys, out_values = pre_attention(produced_outputs)
 
+    # produced_states = init_network_states(decoder)
+
     if gen_seed is not None: produced_outputs.append(gen_seed)
 
     if gen_iterations is None:
@@ -411,10 +404,10 @@ def loss(output_seq, target_seq):
 
 
 def get_params(model):
-    all_params = []
+    all_values = []
     for element in model:
         for module in element:
             for layer in module:
-                all_params.extend(layer.values())
+                all_values.extend(layer.values())
 
-    return all_params
+    return all_values

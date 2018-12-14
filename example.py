@@ -1,16 +1,31 @@
-sample_vector = [1] * 12
-sample_vector_2 = [80] * 12
-sample_sequence = [[sample_vector for e in range(4)], [sample_vector for e2 in range(4)], [sample_vector for e3 in range(4)]]
-sample_sequence2 = [[sample_vector_2 for e in range(4)] for _ in range(14)]
+def generate_test_data(in_len, out_len, hm_channels, channel_size):
+    import random
+    sample_vector = [random.random()] * channel_size ; sample_vector_2 = [random.random()] * 12
+    return [[sample_vector for e in range(hm_channels)] for _ in range(in_len)], \
+           [[sample_vector_2 for e in range(hm_channels)] for _ in range(out_len)]
 
-input = sample_sequence
-target = sample_sequence2
+list = [[], []]
+for _ in range(40):
+    for e,ee in zip(list, generate_test_data(10, 20, 4, 12)): e.append(ee)
+inputs, targets = list
+
+
+network1 = (
+    (8,  6, 10),   # module : intermediate state
+    (8, 10),       # module : global state
+    (10, 8, 12),   # module : global output
+)
+
+network2 = (
+    (8,  6, 10),   # module : intermediate state
+    (8, 10),       # module : global state
+    (10, 8, 12),   # module : global output
+)
 
 
 
 
-
-hm_epochs = 2
+hm_epochs = 3
 learning_rate = 0.001
 
 
@@ -24,17 +39,21 @@ import VanillaV2 as v
 
 model = v.make_model(hm_channels,
                      channel_size,
-                     channel_storage_size)
+                     channel_storage_size,
+                     network_structs=(network1, network2))  # optional
 
-optimizer = v.make_optimizer(model, learning_rate)  # , which='rms', which='adam')
+optimizer = v.make_optimizer(model, learning_rate)
 
 
 for i in range(hm_epochs):
+    loss = 0
 
-    output = v.propogate(input, model, len(target))
-    loss = v.make_grads(output, target)
+    for input, target in zip(inputs, targets):
 
-    v.take_a_step(optimizer)
+        output = v.propogate(input, model, len(target))
+        loss += v.make_grads(output, target)
+
+        v.take_a_step(optimizer)
 
     print(f'epoch {i} : loss {loss}')
 
