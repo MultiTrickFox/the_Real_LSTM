@@ -25,7 +25,7 @@ def create_enc_network(network_struct, hm_vectors, vector_size, storage_size):
         (hm_vectors, vector_size)
     )))
 
-    # module : global state
+    # module : global state alter
 
     encoder.append(create_module(network_struct[1], (
         (hm_vectors, storage_size),
@@ -54,7 +54,7 @@ def create_dec_network(network_struct, hm_vectors, vector_size, storage_size):
         (hm_vectors, vector_size)
     )))
 
-    # module : global state
+    # module : global state alter
 
     decoder.append(create_module(network_struct[1], (
         (hm_vectors, storage_size),
@@ -84,6 +84,7 @@ def create_module(module_layers, input_sizes):
             if _ == 0:
                 size_left = input_size[0]
                 size_right = input_size[1]
+
             else:
                 if __ == 0:
                     size_left = 1
@@ -275,9 +276,9 @@ def propogate_model(model, sequence, context=None, gen_seed=None, gen_iterations
 
     out_keys, out_values = pre_attention(produced_outputs)
 
-    # produced_states = init_network_states(decoder)
+    produced_states = init_network_states(decoder, try_copy=states)
 
-    if gen_seed is not None: produced_outputs.append(gen_seed)
+    produced_outputs = [gen_seed] if gen_seed is not None else [produced_outputs[-1]]
 
     if gen_iterations is None:
 
@@ -333,7 +334,7 @@ def softmax(vector): return (lambda e_x: e_x / e_x.sum())(exp(vector))
 def pay_attention(out_key, enc_out_keys, enc_out_values):
 
     out_key = stack(out_key, 0)
-    enc_out_values = stack(enc_out_values,2)
+    enc_out_values = stack(enc_out_values, 2)
 
     cos_similarity = stack([out_key * enc_out_key for enc_out_key in enc_out_keys], 0)
     cos_similarity = softmax(cos_similarity.sum(1).sum(1).unsqueeze(1))
@@ -357,26 +358,58 @@ def init_network_outs(network):
     return [[out1_initial, out2_initial]]
 
 
-def init_network_states(network):
+def init_network_states(network, try_copy=None):
     hm_vectors = network[0][0]['vol_1'].size()[1]
 
     network_states = []
 
-    for _,module in enumerate(network):
-        module_state = []
+    if try_copy is not None:
 
-        if _ == 0:
-            for __,layer in enumerate(module):
-                module_state.append(zeros_like(layer['bo'], requires_grad=False))
+        for _,(module, module_copy) in enumerate(zip(network, try_copy)):
+            module_state = []
 
-        else:
-            for ___ in range(hm_vectors):
-                module_state.append([])
+            if _ == 0:
+                for __,layer in enumerate(module):
+                    module_state.append(zeros_like(layer['bo'], requires_grad=False))
+                    try:
+                        layer_copy = module_copy[__]
+                        if layer_copy.size() == module_state[-1].size():
+                            module_state[-1] = layer_copy
+                    except: pass
 
-                for __, layer in enumerate(module):
-                    module_state[-1].append(zeros_like(layer['bo'], requires_grad=False))
+            else:
+                for ___ in range(hm_vectors):
+                    module_state.append([])
 
-        network_states.append(module_state)
+                    for __,layer in enumerate(module):
+                        module_state[-1].append(zeros_like(layer['bo'], requires_grad=False))
+                        try:
+                            layer_copy = module_copy[__][___]
+                            if layer_copy.size() == module_state[-1][-1].size():
+                                module_state[-1][-1] = layer_copy
+                        except: pass
+
+
+            network_states.append(module_state)
+
+    else:
+
+        for _,module in enumerate(network):
+            module_state = []
+
+            if _ == 0:
+                for __,layer in enumerate(module):
+                    module_state.append(zeros_like(layer['bo'], requires_grad=False))
+
+            else:
+                for ___ in range(hm_vectors):
+                    module_state.append([])
+
+                    for __, layer in enumerate(module):
+                        module_state[-1].append(zeros_like(layer['bo'], requires_grad=False))
+
+
+            network_states.append(module_state)
 
 
     return [network_states]

@@ -5,11 +5,23 @@ def generate_test_data(in_len, out_len, hm_channels, channel_size):
            [[sample_vector_2 for e in range(hm_channels)] for _ in range(out_len)]
 
 list = [[], []]
-for _ in range(10):
+for _ in range(20):
     for e,ee in zip(list, generate_test_data(10, 15, 4, 12)): e.append(ee)
 inputs, targets = list
 
 
+
+network1 = (
+     tuple([10]),              # module : intermediate state
+     tuple([8,  7, 10]),       # module : state alter
+     tuple([8, 10, 12]),       # module : decision
+)
+
+network2 = (
+     tuple([10]),               # module : intermediate state
+     tuple([8, 10]),            # module : state alter
+     tuple([8, 12]),            # module : decision
+)
 
 
 
@@ -25,8 +37,11 @@ storage_size = 10
 
 import VanillaV2 as v
 
-model = v.make_model(hm_channels, channel_size, storage_size)
+
+model = v.make_model(hm_channels, channel_size, storage_size,
+                                        (network1, network2))
 optimizer = v.make_optimizer(model, learning_rate, 'rms')
+
 
 
 for i in range(hm_epochs):
@@ -56,7 +71,7 @@ for i in range(hm_epochs):
 
     # for param in model.params:
     #     print(param.grad)
-    #
+
     # for name, param in zip(model.names, model.params):
     #     print(f'name : {name} , grad : {param.grad}')
 
