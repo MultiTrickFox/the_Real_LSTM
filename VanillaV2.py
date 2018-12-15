@@ -31,7 +31,7 @@ class GSTM(Module):
         super(GSTM, self).__init__()
 
         self.model = internal_model
-        self.params = internal_params
+        self.params, self.names = internal_params
 
     def forward(self, sequence, hm_timestep=None):
         return gstm.propogate_model(self.model, sequence, gen_iterations=hm_timestep)
@@ -45,8 +45,13 @@ def make_optimizer(model, lr, which=None):
         return optim.RMSprop(model.params, lr)
     else: return optim.SGD(model.params, lr)
 
-def propogate(input, model, hm_timesteps=None):
+def propogate(model, input, hm_timesteps=None):
     return model.forward(input, hm_timesteps)
+
+def optimize(optimizer, output, target):
+    loss = make_grads(output, target)
+    take_a_step(optimizer)
+    return loss
 
 def make_grads(output, target):
     loss = gstm.loss(output, target)
@@ -75,8 +80,8 @@ def load_session():
     if model is not None:
         mtorch = GSTM(model, params)
         meta = load('meta.pkl')
-        # type = get_opt_type(meta)         # todo : unlock. : auto detect optimizer type.
-        opt = make_optimizer(mtorch, 0.1)
+        type = get_opt_type(meta)
+        opt = make_optimizer(mtorch, 0.1, type)
         opt.load_state_dict(meta)
 
     else: return None, None
@@ -126,3 +131,11 @@ class MacOSFile(object):
             batch_size = min(n - idx, 1 << 31 - 1)
             self.f.write(buffer[idx:idx + batch_size])
             idx += batch_size
+
+
+def get_opt_type(meta):
+    # print(f'Opt params: {meta['param_groups'][0].keys()}')
+    for key in meta['param_groups'][0].keys():
+        if key == 'dampening': return None
+        elif key == 'alpha': return 'rms'
+        elif key == 'amsgrad':return 'adam'

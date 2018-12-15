@@ -9,15 +9,13 @@ max_prop_time = 55
 
 def create_model(network_structs, vector_size, storage_size, hm_vectors):
 
-    model = (create_enc_network(network_structs[0], hm_vectors, vector_size, storage_size),
-             create_dec_network(network_structs[1], hm_vectors, vector_size, storage_size)
-             )
-
-    return model
+    return (create_enc_network(network_structs[0], hm_vectors, vector_size, storage_size),
+            create_dec_network(network_structs[1], hm_vectors, vector_size, storage_size))
 
 
 
 def create_enc_network(network_struct, hm_vectors, vector_size, storage_size):
+
     encoder = []
 
     # module : intermediate state
@@ -46,6 +44,7 @@ def create_enc_network(network_struct, hm_vectors, vector_size, storage_size):
 
 
 def create_dec_network(network_struct, hm_vectors, vector_size, storage_size):
+
     decoder = []
 
     # module : intermediate state
@@ -405,9 +404,11 @@ def loss(output_seq, target_seq):
 
 def get_params(model):
     all_values = []
-    for element in model:
-        for module in element:
-            for layer in module:
+    all_keys = []
+    for _,network in enumerate(model):
+        for __,module in enumerate(network):
+            for ___,layer in enumerate(module):
                 all_values.extend(layer.values())
+                all_keys.extend(['N'+str(_)+'-'+'M'+str(__)+'-'+'L'+str(___)+'-'+'W'+key for key in layer.keys()])
 
-    return all_values
+    return all_values, all_keys
