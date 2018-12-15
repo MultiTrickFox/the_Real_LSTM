@@ -1,27 +1,28 @@
 import The_Real_LSTM as gstm
-from torch.nn import Module
 
 from torch import optim, device, cuda
 from torch import save, load
+
+from torch.nn import Module
+from torch.utils.data import Dataset, DataLoader
 
 
 device = device("cuda" if cuda.is_available() else "cpu")
 
 
 
-def make_model(hm_channels, vector_size, memory_size, network_structs=None):
+def make_model(hm_channels, vector_size, memory_size, blueprints=None):
 
-    if network_structs is None: network_structs = [(
+    if blueprints is None: blueprints = [(
         (int(memory_size * 3/5), memory_size),   # module : intermediate state
         (int(memory_size * 3/5), memory_size),   # module : global state
         (int(vector_size * 3/5), vector_size),   # module : global output
     ) for _ in range(2)]
+    else: blueprints = [[module + tuple([size]) if len(module) == 0 or size != module[-1] else module
+                         for _, (module, size) in enumerate(zip(structure, [memory_size, memory_size, vector_size]))]
+                        for structure in blueprints]
 
-    else: network_structs = [[module + tuple([size]) if len(module) == 0 or size != module[-1] else module
-                              for _, (module, size) in enumerate(zip(struct, [memory_size, memory_size, vector_size]))]
-                              for struct in network_structs]
-
-    internal_model = gstm.create_networks(network_structs, vector_size, memory_size, hm_channels)
+    internal_model = gstm.create_networks(blueprints, vector_size, memory_size, hm_channels)
     internal_params = gstm.get_params(internal_model)
 
 
@@ -41,6 +42,34 @@ class GSTM(Module):
         return gstm.propogate_model(self.model, sequence, gen_iterations=hm_timestep)
 
 
+
+class Dataset(Dataset):
+
+    def __init__(self, hm_channels, channel_size, min_seq_len, max_seq_len, hm_data):
+        import random
+
+        self.hm_data      = hm_data
+        self.hm_channels  = hm_channels
+        self.channel_size = channel_size
+        self.min_seq_len  = min_seq_len
+        self.max_seq_len  = max_seq_len
+
+        self.data_fn = lambda : [random.random() for _ in range(channel_size)]
+        self.len_fn  = lambda :  random.randint(min_seq_len,max_seq_len)
+        self.generate= lambda : [[self.data_fn() for e in range(self.hm_channels)] for _ in range(self.len_fn())]
+
+        self.data = [[self.generate(), self.generate()]
+                      for _ in range(hm_data)]
+
+    def __getitem__(self, index):
+        return self.data[index]
+
+    def __len__(self): return self.hm_data
+
+
+
+def make_data(hm_channels, channel_size, min_seq_len=50, max_seq_len=75, hm_data=150):
+    return Dataset(hm_channels, channel_size, min_seq_len, max_seq_len, hm_data)
 
 def make_optimizer(model, lr, which=None):
     if which == 'adam':
