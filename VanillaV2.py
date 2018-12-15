@@ -17,6 +17,10 @@ def make_model(hm_channels, vector_size, memory_size, network_structs=None):
         (int(vector_size * 3/5), int(vector_size * 4/5), vector_size),   # module : global output
     ) for _ in range(2)]
 
+    else: network_structs = [[module + tuple([size]) if len(module) == 0 or size != module[-1] else module
+                              for _, (module, size) in enumerate(zip(struct, [memory_size, memory_size, vector_size]))]
+                              for struct in network_structs]
+
     internal_model = gstm.create_networks(network_structs, vector_size, memory_size, hm_channels)
     internal_params = gstm.get_params(internal_model)
 

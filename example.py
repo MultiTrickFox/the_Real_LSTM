@@ -21,8 +21,8 @@ network1 = (                # encoder
 
 network2 = (                # decoder
      tuple([12, 12]),        # : intermediate state
-     tuple([10, 12]),        # : global state alter
-     tuple([8,  15]),        # : global decision
+     tuple([8, 10, 12]),     # : global state alter
+     tuple([8, 10]),         # : global decision
 )
 
 
