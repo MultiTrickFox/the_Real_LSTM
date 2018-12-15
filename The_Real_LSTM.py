@@ -7,7 +7,7 @@ max_prop_time = 55
 
 
 
-def create_model(network_structs, vector_size, storage_size, hm_vectors):
+def create_networks(network_structs, vector_size, storage_size, hm_vectors):
 
     return (create_enc_network(network_structs[0], hm_vectors, vector_size, storage_size),
             create_dec_network(network_structs[1], hm_vectors, vector_size, storage_size))

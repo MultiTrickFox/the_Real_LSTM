@@ -17,7 +17,7 @@ def make_model(hm_channels, vector_size, memory_size, network_structs=None):
         (int(vector_size * 3/5), int(vector_size * 4/5), vector_size),   # module : global output
     ) for _ in range(2)]
 
-    internal_model = gstm.create_model(network_structs, vector_size, memory_size, hm_channels)
+    internal_model = gstm.create_networks(network_structs, vector_size, memory_size, hm_channels)
     internal_params = gstm.get_params(internal_model)
 
 
@@ -79,9 +79,11 @@ def load_session():
 
     if model is not None:
         mtorch = GSTM(model, params)
-        meta = load('meta.pkl')
+        try: meta = load('meta.pkl')
+        except Exception:
+            return mtorch, make_optimizer(mtorch, 0.001)
         type = get_opt_type(meta)
-        opt = make_optimizer(mtorch, 0.1, type)
+        opt = make_optimizer(mtorch, 0, type)
         opt.load_state_dict(meta)
 
     else: return None, None
