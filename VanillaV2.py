@@ -12,9 +12,9 @@ device = device("cuda" if cuda.is_available() else "cpu")
 def make_model(hm_channels, vector_size, memory_size, network_structs=None):
 
     if network_structs is None: network_structs = [(
-        (int(memory_size * 3/5), int(memory_size * 4/5), memory_size),   # module : intermediate state
-        (int(memory_size * 3/5), int(memory_size * 4/5), memory_size),   # module : global state
-        (int(vector_size * 3/5), int(vector_size * 4/5), vector_size),   # module : global output
+        (int(memory_size * 3/5), memory_size),   # module : intermediate state
+        (int(memory_size * 3/5), memory_size),   # module : global state
+        (int(vector_size * 3/5), vector_size),   # module : global output
     ) for _ in range(2)]
 
     else: network_structs = [[module + tuple([size]) if len(module) == 0 or size != module[-1] else module
@@ -51,11 +51,6 @@ def make_optimizer(model, lr, which=None):
 
 def propogate(model, input, hm_timesteps=None):
     return model.forward(input, hm_timesteps)
-
-def optimize(optimizer, output, target):
-    loss = make_grads(output, target)
-    take_a_step(optimizer)
-    return loss
 
 def make_grads(output, target):
     loss = gstm.loss(output, target)
