@@ -1,13 +1,13 @@
 def get_data(hm_channels, channel_size):
     def generate_test_data(in_len, out_len, hm_channels, channel_size):
         import random
-        sample_vector = [random.random()] * channel_size ; sample_vector_2 = [random.random()] * channel_size
-        return [[sample_vector for e in range(hm_channels)] for _ in range(in_len)], \
-               [[sample_vector_2 for e in range(hm_channels)] for _ in range(out_len)]
+        get_sample_vector = lambda : [random.random() for _ in range(channel_size)]
+        return [[get_sample_vector() for e in range(hm_channels)] for _ in range(in_len)], \
+               [[get_sample_vector() for e in range(hm_channels)] for _ in range(out_len)]
 
     list = [[], []]
-    for _ in range(25):
-        for e,ee in zip(list, generate_test_data(12, 21, hm_channels, channel_size)): e.append(ee)
+    for _ in range(15):
+        for e,ee in zip(list, generate_test_data(55, 80, hm_channels, channel_size)): e.append(ee)
     return list
 inputs, targets = get_data(3, 15)
 
