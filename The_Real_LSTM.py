@@ -286,9 +286,9 @@ def propogate_model(model, sequence, context=None, gen_seed=None, gen_iterations
 
             attended = pay_attention(produced_outputs[-1][0], out_keys, out_values)
 
-            output, states = propogate_dec_network(decoder, produced_states[-1], produced_outputs[-1][0], produced_outputs[-1][-1], attended, dropout)
+            outs, states = propogate_dec_network(decoder, produced_states[-1], produced_outputs[-1][0], produced_outputs[-1][-1], attended, dropout)
 
-            produced_outputs.append(output)
+            produced_outputs.append(outs)
             produced_states.append(states)
 
             if stop_cond(produced_outputs[-1]): break
@@ -299,9 +299,9 @@ def propogate_model(model, sequence, context=None, gen_seed=None, gen_iterations
 
             attended = pay_attention(produced_outputs[-1][0], out_keys, out_values)
 
-            output, states = propogate_dec_network(decoder, produced_states[-1], produced_outputs[-1][0], produced_outputs[-1][-1], attended, dropout)
+            outs, states = propogate_dec_network(decoder, produced_states[-1], produced_outputs[-1][0], produced_outputs[-1][-1], attended, dropout)
 
-            produced_outputs.append(output)
+            produced_outputs.append(outs)
             produced_states.append(states)
 
     del produced_outputs[0]
@@ -388,8 +388,6 @@ def init_network_states(network, try_copy=None):
                             if layer_copy.size() == module_state[-1][-1].size():
                                 module_state[-1][-1] = layer_copy
                         except: pass
-
-
             network_states.append(module_state)
 
     else:
@@ -407,8 +405,6 @@ def init_network_states(network, try_copy=None):
 
                     for __, layer in enumerate(module):
                         module_state[-1].append(zeros_like(layer['bo'], requires_grad=False))
-
-
             network_states.append(module_state)
 
 
@@ -440,6 +436,6 @@ def get_params(model):
         for __,module in enumerate(network):
             for ___,layer in enumerate(module):
                 all_values.extend(layer.values())
-                all_keys.extend(['N'+str(_)+'-'+'M'+str(__)+'-'+'L'+str(___)+'-'+'W'+key for key in layer.keys()])
+                all_keys.extend(['N'+str(_)+'M'+str(__)+'L'+str(___)+key for key in layer.keys()])
 
     return all_values, all_keys

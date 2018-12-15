@@ -1,26 +1,28 @@
 def generate_test_data(in_len, out_len, hm_channels, channel_size):
     import random
-    sample_vector = [random.random()] * channel_size ; sample_vector_2 = [random.random()] * 12
+    sample_vector = [random.random()] * channel_size ; sample_vector_2 = [random.random()] * channel_size
     return [[sample_vector for e in range(hm_channels)] for _ in range(in_len)], \
            [[sample_vector_2 for e in range(hm_channels)] for _ in range(out_len)]
 
 list = [[], []]
 for _ in range(20):
-    for e,ee in zip(list, generate_test_data(10, 15, 4, 12)): e.append(ee)
+    for e,ee in zip(list, generate_test_data(20, 21, 3, 15)): e.append(ee)
 inputs, targets = list
 
 
 
-network1 = (
-     tuple([10]),              # module : intermediate state
-     tuple([8,  7, 10]),       # module : state alter
-     tuple([8, 10, 12]),       # module : decision
+
+
+network1 = (                # encoder
+     tuple([12]),            # : intermediate state
+     tuple([8, 12]),         # : global state alter
+     tuple([8, 15]),         # : global decision
 )
 
-network2 = (
-     tuple([10]),               # module : intermediate state
-     tuple([8, 10]),            # module : state alter
-     tuple([8, 12]),            # module : decision
+network2 = (                # decoder
+     tuple([12, 12]),        # : intermediate state
+     tuple([10, 12]),        # : global state alter
+     tuple([8,  15]),        # : global decision
 )
 
 
@@ -29,9 +31,9 @@ hm_epochs = 3
 learning_rate = 0.001
 
 
-hm_channels = 4
-channel_size = 12
-storage_size = 10
+hm_channels = 3
+channel_size = 15
+storage_size = 12
 
 
 
