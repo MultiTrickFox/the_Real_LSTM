@@ -1,13 +1,13 @@
 def get_data(hm_channels, channel_size):
+    import random
     def generate_test_data(in_len, out_len, hm_channels, channel_size):
-        import random
         get_sample_vector = lambda : [random.random() for _ in range(channel_size)]
         return [[get_sample_vector() for e in range(hm_channels)] for _ in range(in_len)], \
                [[get_sample_vector() for e in range(hm_channels)] for _ in range(out_len)]
 
     list = [[], []]
-    for _ in range(15):
-        for e,ee in zip(list, generate_test_data(55, 80, hm_channels, channel_size)): e.append(ee)
+    for _ in range(50):
+        for e,ee in zip(list, generate_test_data(random.randint(40,60), random.randint(40,60), hm_channels, channel_size)): e.append(ee)
     return list
 inputs, targets = get_data(3, 15)
 
@@ -21,23 +21,23 @@ storage_size = 10
 
 
 network1 = (                # encoder
-     tuple([12]),            # : intermediate state
-     tuple([8, 12]),         # : global state alter
-     tuple([8, 15]),         # : global decision
+     tuple([10]),            # : intermediate state
+     tuple([8, 10]),         # : global state alter
+     tuple([12]),             # : global decision
 )
 
 network2 = (                # decoder
-     tuple([12, 12]),        # : intermediate state
-     tuple([8, 10, 12]),     # : global state alter
-     tuple([8, 10]),         # : global decision
+     tuple([10, 10]),        # : intermediate state
+     tuple([8, 9, 10]),      # : global state alter
+     tuple([12]),             # : global decision
 )
 
 
 
 
 
-learning_rate = 0.001
-hm_epochs = 5
+learning_rate = 0.01
+hm_epochs = 10
 
 
 import VanillaV2 as v
