@@ -377,6 +377,8 @@ def init_network_states(network, try_copy=None):
                             module_state[-1] = layer_copy
                     except: pass
 
+                module_state[-1] = module_copy[-1]
+
             else:
                 for ___ in range(hm_vectors):
                     module_state.append([])
@@ -388,6 +390,9 @@ def init_network_states(network, try_copy=None):
                             if layer_copy.size() == module_state[-1][-1].size():
                                 module_state[-1][-1] = layer_copy
                         except: pass
+
+                    module_state[-1][-1] = module_copy[___][-1]
+
             network_states.append(module_state)
 
     else:
