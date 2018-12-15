@@ -147,12 +147,13 @@ def propogate_module(module, module_state, input1, input2, dropout):
 
 def propogate_enc_network(network, network_state, input1, input2, dropout):
 
-    produced_outputs = []
+    keys = []
+    values = []
+
     produced_states = []
 
-    network_outs = [[], []]
-
     hm_vectors = len(input2)
+
     input1 = stack([Tensor(e) for e in input1], 0)
     input2 = stack([Tensor(e) for e in input2], 0)
 
@@ -163,12 +164,10 @@ def propogate_enc_network(network, network_state, input1, input2, dropout):
 
     output, states = propogate_module(module, module_state, input1, input2, dropout)
 
-    produced_outputs.append(output)
+    intermediate_state = output
     produced_states.append(states)
 
-    intermediate_state = produced_outputs[0]
-
-    # module : global state
+    # module : global state alter
 
     module = network[1]
     module_state = network_state[1]
@@ -179,7 +178,8 @@ def propogate_enc_network(network, network_state, input1, input2, dropout):
 
         output, states = propogate_module(module, module_state[_], input1, intermediate_state, dropout)
 
-        network_outs[0].append(output.squeeze(0))
+        filter = sigmoid(output)
+        keys.append((filter * intermediate_state + (1-filter) * input1[_]).squeeze(0))
         produced_states[-1].append(states)
 
     # module : global output
@@ -193,19 +193,18 @@ def propogate_enc_network(network, network_state, input1, input2, dropout):
 
         output, states = propogate_module(module, module_state[_], intermediate_state, input2, dropout)
 
-        network_outs[1].append(output.squeeze(0))
+        values.append(softmax(output.squeeze(0)))
         produced_states[-1].append(states)
 
 
-    return network_outs, produced_states
+    return (keys, values), produced_states
 
 
 def propogate_dec_network(network, network_state, input1, input2, attended, dropout):
 
-    produced_outputs = []
+    keys = []
+    values = []
     produced_states = []
-
-    network_outs = [[], []]
 
     hm_vectors = len(input2)
     input1 = stack([Tensor(e) for e in input1], 0)
@@ -218,10 +217,8 @@ def propogate_dec_network(network, network_state, input1, input2, attended, drop
 
     output, states = propogate_module(module, module_state, input1, attended, dropout)
 
-    produced_outputs.append(output)
+    intermediate_state = output
     produced_states.append(states)
-
-    intermediate_state = produced_outputs[0]
 
     # module : global state
 
@@ -234,7 +231,8 @@ def propogate_dec_network(network, network_state, input1, input2, attended, drop
 
         output, states = propogate_module(module, module_state[_], input1, intermediate_state, dropout)
 
-        network_outs[0].append(output.squeeze(0))
+        filter = sigmoid(output)
+        keys.append((filter * intermediate_state + (1-filter) * input1[_]).squeeze(0))
         produced_states[-1].append(states)
 
     # module : global output
@@ -248,11 +246,11 @@ def propogate_dec_network(network, network_state, input1, input2, attended, drop
 
         output, states = propogate_module(module, module_state[_], intermediate_state, input2, dropout)
 
-        network_outs[1].append(output.squeeze(0))
+        values.append(softmax(output.squeeze(0)))
         produced_states[-1].append(states)
 
 
-    return network_outs, produced_states
+    return [keys, values], produced_states
 
 
 
