@@ -42,14 +42,17 @@ optimizer = v.make_optimizer(model,
 
 
 
+# basics
+
+
 
 for i in range(1):
 
     for input, target in data:
 
         output = v.propogate(model, input, len(target))
-        v.make_grads(output, target)
 
+        v.make_grads(output, target)
     v.take_step(optimizer)
 
     print(f'epoch {i} : ')
@@ -58,10 +61,13 @@ v.save_session(model, optimizer)
 
 
 
+# details
+
 
 
 model, optimizer = v.load_session()
 
+losses = []
 
 for i in range(1):
     loss = 0
@@ -74,19 +80,19 @@ for i in range(1):
                                 dropout=0.1    )
             loss += v.make_grads(output, target)
 
-        # for param in model.params:
-        #     print(param.grad)
-
-        # for name, param in zip(model.names, model.params):
-        #     print(f'name : {name} , grad : {param.grad}')
-
         v.take_step(optimizer)
 
     data.shuffle()
 
-    print(f'epoch {i} : loss {loss}')
+    print(f'> epoch {i} : {loss}')
+    losses.append(loss)
+
+# v.plot(losses)
 
 
+
+
+# adv
 
 
 
@@ -99,11 +105,10 @@ for i in range(hm_epochs):
     loss = 0
 
     for batch in data.batchify(50):
-
         for (input, target) in batch:
 
             output = v.propogate(model, input, target_length=len(target),
-                                dropout=0.1    )
+                                    dropout=0.1)
             loss += v.make_grads(output, target)
 
         # for param in model.params:
@@ -116,49 +121,29 @@ for i in range(hm_epochs):
 
     data.shuffle()
 
-    print(f'epoch {i} : loss {loss}')
+    print(f'> epoch {i} : {loss}')
     losses[0].append(loss)
 
 
-    loss_dev = 0
-    for (input, target) in dev:
+    for _,(set, name) in enumerate(zip((dev, test), ("dev", "test"))):
+        loss = 0
 
-        output = v.propogate(model, input, target_length=len(target),
-                                dropout=0.0    )
-        loss_dev += v.make_grads(output, target)
+        for (input, target) in set:
 
-    optimizer.zero_grad();
-    losses[1].append(loss_dev)
+            output = v.propogate(model, input, target_length=len(target),
+                                    dropout=0.0)
+            loss += v.make_grads(output, target)
 
+        optimizer.zero_grad()
 
-    loss_test = 0
-    for (input, target) in dev:
-
-        output = v.propogate(model, input, target_length=len(target),
-                                dropout=0.0     )
-        loss_test += v.make_grads(output, target)
-
-    optimizer.zero_grad()
-    losses[2].append(loss_test)
+        print(f'{name} loss : {loss}')
+        losses[_+1].append(loss)
 
 
 
 
 
-import matplotlib.pyplot as plot
-import matplotlib.animation as animation
+# visualization
 
-
-fig = plot.figure()
-axis = fig.add_subplot(1, 1, 1)
-
-
-
-def animate(i):
-    axis.clear()
-    for loss, color in zip(losses, ['r','g','b']):
-        axis.plot(range(hm_epochs), loss, color)
-
-ani = animation.FuncAnimation(fig, animate, 5)
-plot.show()
+v.plot(losses)
 

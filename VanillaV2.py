@@ -79,22 +79,22 @@ class Dataset(Dataset):
         self.shuffle = lambda : shuffle(self.data)
 
     def split(self, dev_ratio, test_ratio):
-        hm_train = (1-dev_ratio-test_ratio) * self.hm_data
+        hm_train = int((1-dev_ratio-test_ratio) * self.hm_data)
         hm_dev = int(dev_ratio * self.hm_data)
         hm_test = int(test_ratio * self.hm_data)
-        self.data = self.data[:hm_dev]
         self.dev = self.data[hm_dev:-hm_test]
         self.test = self.data[-hm_test:]
+        self.data = self.data[:hm_dev]
         self.hm_data = hm_train
         return self, self.dev, self.test
 
     def batchify(self, batch_size):
         hm_batches = int(self.hm_data / batch_size)
-        hm_leftover = self.hm_data % batch_size
+        hm_leftover = int(self.hm_data % batch_size)
         batched_resource = [self.data[_ * batch_size : (_+1) * batch_size]
                             for _ in range(hm_batches)]
         if hm_leftover != 0:
-            batched_resource.append(self.data[int(self.hm_data-hm_leftover):])
+            batched_resource.append(self.data[-hm_leftover:])
 
         return batched_resource
 
@@ -205,3 +205,19 @@ def get_opt_type(meta):
         if key == 'dampening': return None
         elif key == 'alpha': return 'rms'
         elif key == 'amsgrad':return 'adam'
+
+
+def plot(losses):
+    try:
+        import matplotlib.pyplot as plot
+
+        if len(losses) == 3:
+            hm_epochs = len(losses[0])
+
+            for loss, color in zip(losses, ['r','g','b']):
+                plot.plot(range(hm_epochs), loss, color)
+        else:
+            hm_epochs = len(losses) ; plot.plot(range(hm_epochs), losses, 'k')
+
+        plot.show()
+    except: print('graph unavailable.')
