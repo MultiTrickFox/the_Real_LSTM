@@ -20,7 +20,7 @@ network2 = (               # decoder
 
 
 learning_rate = 0.01
-hm_epochs = 10
+hm_epochs = 2
 
 
 
@@ -67,8 +67,6 @@ v.save_session(model, optimizer)
 
 model, optimizer = v.load_session()
 
-losses = []
-
 for i in range(1):
     loss = 0
 
@@ -85,10 +83,6 @@ for i in range(1):
     data.shuffle()
 
     print(f'> epoch {i} : {loss}')
-    losses.append(loss)
-
-# v.plot(losses)
-
 
 
 
@@ -140,6 +134,20 @@ for i in range(hm_epochs):
         losses[_+1].append(loss)
 
 
+
+# datasplitting
+
+data, another, _ = data.split(dev_ratio=0.1, test_ratio=0.0)
+data, _, someset = data.split(dev_ratio=0.0, test_ratio=0.1)
+
+loss = 0
+for (input, target) in test + someset + another:
+
+    output = v.propogate(model, input, target_length=len(target),
+                            dropout=0.0)
+    loss += v.make_grads(output, target)
+
+print('final test loss: ', loss)
 
 
 

@@ -211,13 +211,13 @@ def plot(losses):
     try:
         import matplotlib.pyplot as plot
 
-        if len(losses) == 3:
+        if len(losses) <= 3:
             hm_epochs = len(losses[0])
-
-            for loss, color in zip(losses, ['r','g','b']):
-                plot.plot(range(hm_epochs), loss, color)
-        else:
-            hm_epochs = len(losses) ; plot.plot(range(hm_epochs), losses, 'k')
+            for _, color in enumerate(('r', 'g', 'b')):
+                try:
+                    plot.plot(range(hm_epochs), losses[_], color)
+                except : pass
+        else: plot.plot(range(len(losses)), losses, 'k')
 
         plot.show()
     except: print('graph unavailable.')
