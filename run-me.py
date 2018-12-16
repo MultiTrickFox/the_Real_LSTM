@@ -29,12 +29,10 @@ import VanillaV2 as v
 
 model = v.make_model(
      hm_channels,channel_size,
-        storage_size,
-    (network1, network2))
+        storage_size, (network1, network2))
 
 data = v.make_data(hm_channels, channel_size,
-    min_seq_len=25, max_seq_len=45,
-                  data_size=110  )
+    min_seq_len=25, max_seq_len=45, data_size=110)
 
 
 optimizer = v.make_optimizer(model,
@@ -47,13 +45,12 @@ optimizer = v.make_optimizer(model,
 
 for i in range(1):
 
-
     for input, target in data:
 
         output = v.propogate(model, input, len(target))
         v.make_grads(output, target)
 
-    v.take_a_step(optimizer)
+    v.take_step(optimizer)
 
     print(f'epoch {i} : ')
 
@@ -73,17 +70,17 @@ for i in range(hm_epochs):
         for (input, target) in batch:
 
             output = v.propogate(model, input, target_length=len(target),
-                            dropout=0.1)
+                                dropout=0.1    )
             loss += v.make_grads(output, target)
 
-    # for param in model.params:
-    #     print(param.grad)
+        # for param in model.params:
+        #     print(param.grad)
 
-    # for name, param in zip(model.names, model.params):
-    #     print(f'name : {name} , grad : {param.grad}')
+        # for name, param in zip(model.names, model.params):
+        #     print(f'name : {name} , grad : {param.grad}')
 
-    v.take_a_step(optimizer)
-
-    print(f'epoch {i} : loss {loss}')
+        v.take_step(optimizer)
 
     data.shuffle()
+
+    print(f'epoch {i} : loss {loss}')

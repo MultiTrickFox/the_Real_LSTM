@@ -1,15 +1,11 @@
 import The_Real_LSTM as gstm
 
-from random import shuffle
-
 from torch import optim
 from torch import save, load
 from torch import cuda, set_default_tensor_type
 
-from torch.nn import Module
 from torch.utils.data import Dataset, DataLoader
-
-
+from torch.nn import Module ; from random import shuffle
 
 set_default_tensor_type('torch.cuda.FloatTensor' if cuda.is_available() else 'torch.FloatTensor')
 
@@ -102,13 +98,6 @@ class Dataset(Dataset):
 def make_data(hm_channels, channel_size, min_seq_len=50, max_seq_len=75, data_size=200, from_file=None):
     return Dataset(hm_channels, channel_size, min_seq_len, max_seq_len, data_size, from_file)
 
-def make_optimizer(model, lr, type=None):
-    if type == 'adam':
-        return optim.Adam(model.params, lr)
-    elif type == 'rms':
-        return optim.RMSprop(model.params, lr)
-    else: return optim.SGD(model.params, lr)
-
 def propogate(model, input, target_length=None, dropout=0.0):
     return model.forward(input, target_length, drop=dropout)
 
@@ -117,9 +106,15 @@ def make_grads(output, target):
     loss.backward()
     return float(loss)
 
-def take_a_step(optimizer):
-    optimizer.step()
-    optimizer.zero_grad()
+def make_optimizer(model, lr, type=None):
+    if type == 'adam':
+        return optim.Adam(model.params, lr)
+    elif type == 'rms':
+        return optim.RMSprop(model.params, lr)
+    else: return optim.SGD(model.params, lr)
+
+def take_step(optimizer):
+    optimizer.step() ; optimizer.zero_grad()
 
 
     # Helpers #
