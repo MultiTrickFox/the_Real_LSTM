@@ -1,32 +1,37 @@
 import The_Real_LSTM as gstm
 
-from torch import optim, device, cuda
+from random import shuffle
+
+from torch import optim
 from torch import save, load
+from torch import cuda, set_default_tensor_type
 
 from torch.nn import Module
 from torch.utils.data import Dataset, DataLoader
 
 
-device = device("cuda" if cuda.is_available() else "cpu")
+
+set_default_tensor_type('torch.cuda.FloatTensor' if cuda.is_available() else 'torch.FloatTensor')
+
 
 
 
 def make_model(hm_channels, vector_size, memory_size, blueprints=None):
 
-    if blueprints is None: blueprints = [(
+    if blueprints is None: blueprints = tuple([(
         (int(memory_size * 3/5), memory_size),   # module : intermediate state
         (int(memory_size * 3/5), memory_size),   # module : global state
         (int(vector_size * 3/5), vector_size),   # module : global output
-    ) for _ in range(2)]
-    else: blueprints = [[module + tuple([size]) if len(module) == 0 or size != module[-1] else module
+    ) for _ in range(2)])
+    else: blueprints = tuple([[module + tuple([size]) if len(module) == 0 or size != module[-1] else module
                          for _, (module, size) in enumerate(zip(structure, [memory_size, memory_size, vector_size]))]
-                        for structure in blueprints]
+                        for structure in blueprints])
 
     internal_model = gstm.create_networks(blueprints, vector_size, memory_size, hm_channels)
     internal_params = gstm.get_params(internal_model)
 
 
-    return GSTM(internal_model, internal_params).to(device)
+    return GSTM(internal_model, internal_params)
 
 
 
@@ -38,28 +43,54 @@ class GSTM(Module):
         self.model = internal_model
         self.params, self.names = internal_params
 
-    def forward(self, sequence, hm_timestep=None):
-        return gstm.propogate_model(self.model, sequence, gen_iterations=hm_timestep)
+    def forward(self, sequence, hm_timestep=None, drop=0.0):
+        return gstm.propogate_model(self.model, sequence, gen_iterations=hm_timestep, dropout=drop)
 
 
 
 class Dataset(Dataset):
 
-    def __init__(self, hm_channels, channel_size, min_seq_len, max_seq_len, hm_data):
-        import random
+    def __init__(self, hm_channels, channel_size, min_seq_len, max_seq_len, hm_data, file):
 
-        self.hm_data      = hm_data
-        self.hm_channels  = hm_channels
-        self.channel_size = channel_size
-        self.min_seq_len  = min_seq_len
-        self.max_seq_len  = max_seq_len
+        if file is None:
+            import random
 
-        self.data_fn = lambda : [random.random() for _ in range(channel_size)]
-        self.len_fn  = lambda :  random.randint(min_seq_len,max_seq_len)
-        self.generate= lambda : [[self.data_fn() for e in range(self.hm_channels)] for _ in range(self.len_fn())]
+            self.hm_data      = hm_data
+            self.min_seq_len  = min_seq_len
+            self.max_seq_len  = max_seq_len
+            self.hm_channels  = hm_channels
+            self.channel_size = channel_size
 
-        self.data = [[self.generate(), self.generate()]
-                      for _ in range(hm_data)]
+            self.data_fn = lambda : [random.random() for _ in range(channel_size)]
+            self.len_fn  = lambda :  random.randint(min_seq_len,max_seq_len)
+            self.generate= lambda : [[self.data_fn() for e in range(self.hm_channels)] for _ in range(self.len_fn())]
+
+            self.data = [(self.generate(), self.generate())
+                        for _ in range(hm_data)]
+
+        else:
+            from glob import glob
+
+            raw_files = glob(file)
+            shuffle(raw_files)
+
+            self.data = []
+            for file in raw_files:
+                self.data.extend(pickle_load(file))
+
+            self.data = shuffle(self.data)[:hm_data]
+
+        self.shuffle = lambda : shuffle(self.data)
+
+    def batchify(self, batch_size):
+        hm_batches = int(self.hm_data / batch_size)
+        batched_resource = [self.data[_ * batch_size : (_+1) * batch_size]
+                            for _ in range(hm_batches)]
+        hm_leftover = self.hm_data % batch_size
+        if hm_leftover != 0:
+            batched_resource.append(self.data[-hm_leftover:])
+
+        return batched_resource
 
     def __getitem__(self, index):
         return self.data[index]
@@ -68,18 +99,18 @@ class Dataset(Dataset):
 
 
 
-def make_data(hm_channels, channel_size, min_seq_len=50, max_seq_len=75, hm_data=150):
-    return Dataset(hm_channels, channel_size, min_seq_len, max_seq_len, hm_data)
+def make_data(hm_channels, channel_size, min_seq_len=50, max_seq_len=75, data_size=200, from_file=None):
+    return Dataset(hm_channels, channel_size, min_seq_len, max_seq_len, data_size, from_file)
 
-def make_optimizer(model, lr, which=None):
-    if which == 'adam':
+def make_optimizer(model, lr, type=None):
+    if type == 'adam':
         return optim.Adam(model.params, lr)
-    elif which == 'rms':
+    elif type == 'rms':
         return optim.RMSprop(model.params, lr)
     else: return optim.SGD(model.params, lr)
 
-def propogate(model, input, hm_timesteps=None):
-    return model.forward(input, hm_timesteps)
+def propogate(model, input, target_length=None, dropout=0.0):
+    return model.forward(input, target_length, drop=dropout)
 
 def make_grads(output, target):
     loss = gstm.loss(output, target)
