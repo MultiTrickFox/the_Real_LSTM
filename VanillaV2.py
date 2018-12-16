@@ -23,21 +23,21 @@ def make_model(hm_channels, vector_size, memory_size, blueprints=None):
                          for _, (module, size) in enumerate(zip(structure, [memory_size, memory_size, vector_size]))]
                         for structure in blueprints])
 
-    internal_model = gstm.create_networks(blueprints, vector_size, memory_size, hm_channels)
-    internal_params = gstm.get_params(internal_model)
+    model = gstm.create_networks(blueprints, vector_size, memory_size, hm_channels)
+    params = gstm.get_params(model)
 
 
-    return GSTM(internal_model, internal_params)
+    return GSTM(model, params)
 
 
 
 class GSTM(Module):
 
-    def __init__(self, internal_model, internal_params):
+    def __init__(self, model, params):
         super(GSTM, self).__init__()
 
-        self.model = internal_model
-        self.params, self.names = internal_params
+        self.model = model
+        self.params, self.names = params
 
     def forward(self, sequence, hm_timestep=None, drop=0.0):
         return gstm.propogate_model(self.model, sequence, gen_iterations=hm_timestep, dropout=drop)
@@ -78,13 +78,23 @@ class Dataset(Dataset):
 
         self.shuffle = lambda : shuffle(self.data)
 
+    def split(self, dev_ratio, test_ratio):
+        hm_train = (1-dev_ratio-test_ratio) * self.hm_data
+        hm_dev = int(dev_ratio * self.hm_data)
+        hm_test = int(test_ratio * self.hm_data)
+        self.data = self.data[:hm_dev]
+        self.dev = self.data[hm_dev:-hm_test]
+        self.test = self.data[-hm_test:]
+        self.hm_data = hm_train
+        return self, self.dev, self.test
+
     def batchify(self, batch_size):
         hm_batches = int(self.hm_data / batch_size)
+        hm_leftover = self.hm_data % batch_size
         batched_resource = [self.data[_ * batch_size : (_+1) * batch_size]
                             for _ in range(hm_batches)]
-        hm_leftover = self.hm_data % batch_size
         if hm_leftover != 0:
-            batched_resource.append(self.data[-hm_leftover:])
+            batched_resource.append(self.data[int(self.hm_data-hm_leftover):])
 
         return batched_resource
 
