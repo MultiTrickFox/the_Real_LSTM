@@ -46,9 +46,26 @@ class GSTM(Module):
 
 class Dataset(Dataset):
 
-    def __init__(self, hm_channels, channel_size, min_seq_len, max_seq_len, hm_data, file):
+    def __init__(self, hm_channels, channel_size, min_seq_len, max_seq_len, hm_data, file, obj):
 
-        if file is None:
+
+        if obj is not None:
+            self.data = obj
+            self.hm_data = len(obj)
+
+        elif file is not None:
+            from glob import glob
+
+            raw_files = glob(file)
+            shuffle(raw_files)
+
+            self.data = []
+            for file in raw_files:
+                self.data.extend(pickle_load(file))
+
+            self.data = shuffle(self.data)[:hm_data]
+
+        else:
             import random
 
             self.hm_data      = hm_data
@@ -64,29 +81,23 @@ class Dataset(Dataset):
             self.data = [(self.generate(), self.generate())
                         for _ in range(hm_data)]
 
-        else:
-            from glob import glob
-
-            raw_files = glob(file)
-            shuffle(raw_files)
-
-            self.data = []
-            for file in raw_files:
-                self.data.extend(pickle_load(file))
-
-            self.data = shuffle(self.data)[:hm_data]
-
         self.shuffle = lambda : shuffle(self.data)
 
-    def split(self, dev_ratio, test_ratio):
+    def split(self, dev_ratio=0.0, test_ratio=0.0):
         hm_train = int((1-dev_ratio-test_ratio) * self.hm_data)
         hm_dev = int(dev_ratio * self.hm_data)
         hm_test = int(test_ratio * self.hm_data)
-        self.dev = self.data[hm_dev:-hm_test]
-        self.test = self.data[-hm_test:]
+
+        dev = Dataset(0, 0, 0, 0, 0, 0,
+                obj=self.data[hm_dev:-hm_test])
+        test = Dataset(0, 0, 0, 0, 0, 0,
+                obj=self.data[-hm_test:])
         self.data = self.data[:hm_dev]
         self.hm_data = hm_train
-        return self, self.dev, self.test
+
+        returns = [self, dev, test]
+        return tuple([r for r in
+             returns if len(r) > 0])
 
     def batchify(self, batch_size):
         hm_batches = int(self.hm_data / batch_size)
@@ -105,8 +116,8 @@ class Dataset(Dataset):
 
 
 
-def make_data(hm_channels, channel_size, min_seq_len=50, max_seq_len=75, data_size=200, from_file=None):
-    return Dataset(hm_channels, channel_size, min_seq_len, max_seq_len, data_size, from_file)
+def make_data(hm_channels=1, channel_size=5, min_seq_len=50, max_seq_len=75, data_size=200, from_file=None, from_obj=None):
+    return Dataset(hm_channels, channel_size, min_seq_len, max_seq_len, data_size, from_file, from_obj)
 
 def propogate(model, input, target_length=None, dropout=0.0):
     return model.forward(input, target_length, drop=dropout)

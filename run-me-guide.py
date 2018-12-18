@@ -151,8 +151,8 @@ if extra:
 
     # data splitting
 
-    data, another, _ = data.split(dev_ratio=0.1, test_ratio=0.0)
-    data, _, someset = data.split(dev_ratio=0.0, test_ratio=0.1)
+    data, someset= data.split(0.1)
+    data, _, another = data.split(0.1, 0.2)
 
     loss = 0
     for (input, target) in test + someset + another:
