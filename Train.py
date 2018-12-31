@@ -9,9 +9,9 @@ def run():
     loadSession = True
 
 
-    hm_channels  = 4
-    channel_size = 13
-    storage_size = 10
+    hm_channels  = 2
+    channel_size = 2
+    storage_size = 2
 
 
     network1 = (               # encoder
