@@ -57,13 +57,13 @@ class Dataset(Dataset):
             from glob import glob
 
             raw_files = glob(file)
-            shuffle(raw_files)
-
             self.data = []
             for file in raw_files:
                 self.data.extend(pickle_load(file))
 
-            self.data = shuffle(self.data)[:hm_data]
+            shuffle(self.data) ; self.hm_data = hm_data
+            self.data = self.data[:hm_data]
+
 
         else:
             import random
