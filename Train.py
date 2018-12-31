@@ -1,4 +1,5 @@
 from multiprocessing import Pool, cpu_count
+from copy import deepcopy
 from VanillaV2 import *
 
 
@@ -6,7 +7,16 @@ from VanillaV2 import *
 def run():
 
 
-    loadSession = True
+
+    loadSession = False
+
+
+
+    data_size = 1#1_000
+    batch_size = 1#200
+    hm_epochs = 20
+    learning_rate = 0.01
+    dropout = 0.3
 
 
     hm_channels  = 2
@@ -26,12 +36,6 @@ def run():
          tuple([8,  10]),       # : global decision
     )
 
-
-    data_size     = 1_000
-    batch_size    = 200
-    hm_epochs     = 20
-    learning_rate = 0.01
-    dropout       = 0.3
 
 
     model \
@@ -77,38 +81,56 @@ def run():
 cpu_count = cpu_count()
 
 
-
 def process_batch(model, batch, dropout):
+    inner_model = model.model
 
     with Pool(cpu_count) as P:
-        results = P.map_async(process_sample, [(model.copy(), input, target, dropout) for (input, target) in batch])
+        results = P.map_async(process_sample, [(deepcopy(inner_model), input, target, dropout) for (input, target) in batch])
 
-        P.join()
         P.close()
+        P.join()
 
-    total_gradient = 0
     total_loss = 0
 
     for (gradient, loss) in results.get():
-        total_gradient += numpy.array(gradient)
-        total_loss += numpy.array(loss)
-
-    for (grad, param) in zip(total_gradient, model.params):
-        param.grad += grad
+        set_grads(model, gradient)
+        total_loss += loss
 
     return model, float(total_loss)
 
 
-import numpy
+from The_Real_LSTM import propogate_model as forw_prop
 
 
-def process_sample(model, input, target, dropout):
+def process_sample(data):
+    model, input, target, dropout = data
 
-    output = propogate(model, input, len(target), dropout)
+    output = forw_prop(model, input, gen_iterations=len(target), dropout=dropout)
     loss = make_grads(output, target)
-    grads = numpy.array([param.grad for param in model.params])
+    grads = get_grads(model)
 
     return grads, loss
+
+
+
+def get_grads(model):
+    grads = []
+    for _, network in enumerate(model):
+        for __, module in enumerate(network):
+            for ___, layer in enumerate(module):
+                for ____, param in enumerate(layer.values()):
+                    if param.grad is not None:
+                        grads.append(param.grad.detach())
+                    else: print(f'{_}.{__}.{___}.{____} : None grad.')
+
+    return grads
+
+def set_grads(model, grads):
+    for _,param in enumerate(model.params):
+        if param.grad is None:
+            param.grad = grads[_]
+        else:
+            param.grad += grads[_]
 
 
 

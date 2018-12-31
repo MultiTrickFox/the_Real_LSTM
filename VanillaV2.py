@@ -2,13 +2,9 @@ import The_Real_LSTM as gstm
 
 from torch import optim
 from torch import save, load
-from torch import cuda, set_default_tensor_type
 
 from torch.utils.data import Dataset, DataLoader
 from torch.nn import Module ; from random import shuffle
-
-set_default_tensor_type('torch.cuda.FloatTensor' if cuda.is_available() else 'torch.FloatTensor')
-
 
 
 

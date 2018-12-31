@@ -34,7 +34,7 @@ def process_file(filename):
 
         parts_processed = []
 
-        if len(parts) >= hm_channels:
+        if len(parts) >= hm_channels*2:
 
             for part in parts:
                 part_processed = []
@@ -55,15 +55,16 @@ def process_file(filename):
                                 #     print(f'Inner Inner Exception ; File {filename} : {e}')
 
                         elif element.isChord:
-                            for e in element:
-                                try:
-                                    if e.isNote:
-                                        if 0.0 < e.duration.quarterLength <= max_vals[1]:
-                                            element_processed.append(int(e.pitch.midi))
-                                            element_processed.append(float(e.duration.quarterLength))
+                            pass
+                            # for e in element:
+                            #     try:
+                            #         if e.isNote:
+                            #             if 0.0 < e.duration.quarterLength <= max_vals[1]:
+                            #                 element_processed.append(int(e.pitch.midi))
+                            #                 element_processed.append(float(e.duration.quarterLength))
 
-                                except Exception as e:
-                                    pass
+                                # except Exception as e:
+                                #     pass
                                     # if show_exceptions:
                                     #     print(f'Inner Inner Exception ; File {filename} : {e}')
 
@@ -95,9 +96,23 @@ def process_file(filename):
                     parts_modified.append(part_modified)
 
 
-            for i in parts_modified:
-                for j in parts_processed:
-                    datapoints.append((i, j))
+            for _,i in enumerate(parts_modified[:-1]):
+                for __,j in enumerate(parts_processed[:-1]):
+                    for i2 in parts_modified[_+1:]:
+                        for j2 in parts_processed[__+1:]:
+
+                            size_smallest_i = min(len(i), len(i2))
+                            size_smallest_j = min(len(j), len(j2))
+
+                            serie_over_time = ([], [])
+
+                            for t_i in range(size_smallest_i):
+                                serie_over_time[0].append((i[t_i], i2[t_i]))
+
+                            for t_j in range(size_smallest_j):
+                                serie_over_time[1].append((j[t_j], j2[t_j]))
+
+                            datapoints.append(serie_over_time)
             shuffle(datapoints)
 
             return datapoints
@@ -105,7 +120,7 @@ def process_file(filename):
 
         else:
             if show_exceptions:
-                print(f'File {filename} parts < {hm_channels}.')
+                print(f'File {filename} parts < {hm_channels*2}.')
 
     except Exception as e:
         if show_exceptions:
