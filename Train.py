@@ -9,7 +9,7 @@ def run():
     loadSession = True
 
 
-    hm_channels  = 2
+    hm_channels  = 4
     channel_size = 13
     storage_size = 10
 
@@ -54,6 +54,7 @@ def run():
         if opt_load: optimizer = opt_load
 
 
+    losses = []
     for _ in range(hm_epochs):
         epoch_loss = 0
 
@@ -66,8 +67,10 @@ def run():
 
         data.shuffle()
         print(f'epoch {_} completed, loss: {round(epoch_loss, 3)}')
+        losses.append(epoch_loss)
 
     save_session(model, optimizer)
+    plot(losses)
 
 
 

@@ -222,7 +222,7 @@ def plot(losses):
     try:
         import matplotlib.pyplot as plot
 
-        if len(losses) <= 3:
+        if len(losses) <= 10:
             hm_epochs = len(losses[0])
             for _, color in enumerate(('r', 'g', 'b')):
                 try:
