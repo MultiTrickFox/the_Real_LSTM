@@ -1,11 +1,13 @@
-from VanillaV2 import *
-
-import numpy
 from multiprocessing import Pool, cpu_count
+from VanillaV2 import *
 
 
 
 def run():
+
+
+    loadSession = True
+
 
     hm_channels  = 2
     channel_size = 13
@@ -46,6 +48,11 @@ def run():
                          type='rms'
                          )
 
+    if loadSession:
+        model_load, opt_load = load_session()
+        if model_load: model = model_load
+        if opt_load: optimizer = opt_load
+
 
     for _ in range(hm_epochs):
         epoch_loss = 0
@@ -56,9 +63,11 @@ def run():
             take_step(optimizer)
 
             epoch_loss += loss
+
         data.shuffle()
+        print(f'epoch {_} completed, loss: {round(epoch_loss, 3)}')
 
-
+    save_session(model, optimizer)
 
 
 
@@ -87,6 +96,9 @@ def process_batch(model, batch, dropout):
     return model, float(total_loss)
 
 
+import numpy
+
+
 def process_sample(model, input, target, dropout):
 
     output = propogate(model, input, len(target), dropout)
@@ -94,6 +106,8 @@ def process_sample(model, input, target, dropout):
     grads = numpy.array([param.grad for param in model.params])
 
     return grads, loss
+
+
 
 
 
