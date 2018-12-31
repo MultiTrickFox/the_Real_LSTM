@@ -11,12 +11,11 @@ from multiprocessing import Pool, cpu_count
 hm_channels  = 2
 channel_size = 2
 
-max_vals = [127, 8]
+max_vals = [127, 32]
 
 
-hm_altered        = 4
-drop_rate_time    = 0.2
-drop_rate_element = 0.1
+hm_altered        = 5
+drop_rate_time    = 0.3
 
 
 show_exceptions = True
@@ -25,13 +24,14 @@ show_exceptions = True
 
 
 
-def process_file(file):
+def process_file(filename):
     datapoints = []
 
 
     try:
-        file = converter.parse(file)
+        file = converter.parse(filename)
         parts = instrument.partitionByInstrument(file)
+
         parts_processed = []
 
         if len(parts) >= hm_channels:
@@ -42,21 +42,39 @@ def process_file(file):
                 for element in part.flat.elements:
                     element_processed = []
 
-                    if element.isNote():
-                        if 0.0 < element.duration.quarterLength <= max_vals[1]:
-                            element_processed.append(float(element.pitch.midi))
-                            element_processed.append(float(element.duration.quarterLength))
-
-                    elif element.isChord():
-                        for e in element:
-                            if e.isNote():
+                    try:
+                        if element.isNote:
+                            try:
                                 if 0.0 < element.duration.quarterLength <= max_vals[1]:
-                                    element_processed.append(float(element.pitch.midi))
+                                    element_processed.append(int(element.pitch.midi))
                                     element_processed.append(float(element.duration.quarterLength))
 
-                    part_processed.append(element)
-                parts_processed.append(part_processed)
+                            except Exception as e:
+                                pass
+                                # if show_exceptions:
+                                #     print(f'Inner Inner Exception ; File {filename} : {e}')
 
+                        elif element.isChord:
+                            for e in element:
+                                try:
+                                    if e.isNote:
+                                        if 0.0 < e.duration.quarterLength <= max_vals[1]:
+                                            element_processed.append(int(e.pitch.midi))
+                                            element_processed.append(float(e.duration.quarterLength))
+
+                                except Exception as e:
+                                    pass
+                                    # if show_exceptions:
+                                    #     print(f'Inner Inner Exception ; File {filename} : {e}')
+
+                    except Exception as e:
+                        pass
+                        # if show_exceptions:
+                        #     print(f'Inner Exception ; File {filename} : {e}')
+
+
+                    if len(element_processed) != 0: part_processed.append(element_processed)
+                if len(part_processed)        != 0: parts_processed.append(part_processed)
 
             parts_modified = []
             for _ in range(hm_altered):
@@ -71,8 +89,8 @@ def process_file(file):
 
                         part_modified.append([e/max_val for e,max_val in zip(element,max_vals)])
 
-                    for to_drop in choices(range(len(part_modified)), k=len(parts_modified)*drop_rate_time):
-                        parts_modified.pop(to_drop)
+                    to_drop = choices(range(len(part_modified)), k=int(len(parts_modified)*drop_rate_time))
+                    parts_modified = [e for _,e in enumerate(parts_modified) if _ not in to_drop]
 
                     parts_modified.append(part_modified)
 
@@ -82,13 +100,16 @@ def process_file(file):
                     datapoints.append((i, j))
             shuffle(datapoints)
 
-        return datapoints
+            return datapoints
 
 
+        else:
+            if show_exceptions:
+                print(f'File {filename} parts < {hm_channels}.')
 
     except Exception as e:
         if show_exceptions:
-            print(f'Encountered exception : {e}')
+            print(f'Outer Exception ; File {filename} : {e}')
 
 
 
@@ -181,7 +202,7 @@ if __name__ == '__main__':
 
         P.close() ; P.join()
 
-    [data.extend(result) for result in results.get()]
+    [data.extend(result) for result in results.get() if result is not None]
 
     print(f'Obtained: {len(data)} samples.')
     pickle_save(data, 'samples_1.pkl')
