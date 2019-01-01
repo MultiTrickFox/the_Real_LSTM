@@ -1,51 +1,47 @@
+import pickle
+
 from glob import glob
 from numpy import argmax
+from scipy import signal
 from random import choices
 
-from scipy import signal
-import scipy.io.wavfile as wave
-
-
+from numpy.linalg import norm as n
+from scipy.io.wavfile import read
+from multiprocessing import Pool, cpu_count
 
 
 
 hm_channels  = 3    # 3 dominant frequency channels
+
 channel_size = 2    # frequency, amplitude per channel
+max_vals = [1, 1]   # per data normalization
 
-max_vals = [1, 1]   # frequency, amplitude normalization
-
-
-
-hm_altered        = 5       # altered data, timesteps lost.
-drop_rate_time    = 0.3     # likely to be lost.
+hm_altered          = 5     # altered data, timesteps lost.
+drop_rate_time      = 0.3   # likely to be lost.
 
 
 
-dataset = []
+def run(inp):
+    file, id = inp
 
+    rate, data = read(file)
 
-for file in glob('*.wav'):
+    dataset = []
 
-    rate, data = wave.read(file)
-
-    hm_tracks = data.shape[1]
-    tracks = [data[:,tr] for tr in range(hm_tracks)]
-
+    tracks = [data[:, tr_nr] for tr_nr in range(data.shape[1])]
     tracks_converted = []
 
     for track in tracks:
-
-        freqs, times, amps = signal.spectrogram(track)
-
         track_converted = []
 
+        freqs, times, amps = signal.spectrogram(track)
         hm_frequencies = amps.shape[0]
         hm_timesteps = amps.shape[1]
 
         for t in range(hm_timesteps):
-            amps_at_t = amps[:,t]
-
             channels_converted = []
+
+            amps_at_t = normalize(amps[:, t])
 
             for ch in range(hm_channels):
                 amp_max = argmax(amps_at_t)
@@ -58,7 +54,6 @@ for file in glob('*.wav'):
                 amps_at_t = [e for _,e in enumerate(amps_at_t) if _ != amp_max]  # del amps_at_t[fr_max]
 
             track_converted.append(channels_converted)
-
         tracks_converted.append(track_converted)
 
     for _,track in enumerate(tracks_converted):
@@ -73,11 +68,25 @@ for file in glob('*.wav'):
                 new_track = [e for _,e in enumerate(track) if _ not in to_drop1]
                 new_track2 = [e for _,e in enumerate(track2) if _ not in to_drop2]
 
-
                 dataset.append((new_track, track2))
                 dataset.append((new_track2, track))
 
-import pickle
-print(f'Total of {len(dataset)} samples.')
-with open('dataset.pkl', 'wb') as file:
-    pickle.dump(dataset, file)
+
+    print(f'Total of {len(dataset)} samples.')
+    with open('dataset'+str(id)+'.pkl', 'wb') as file:
+        pickle.dump(dataset, file)
+
+def normalize(v):
+    norm = n(v)
+    if norm == 0:
+       return v
+    return v / norm
+
+
+
+if __name__ == '__main__':
+
+    with Pool(cpu_count()) as P:
+        P.map_async(run, [(f,i+1) for i,f in enumerate(glob('samples/*.wav'))])
+        P.close() ;P.join()
+
