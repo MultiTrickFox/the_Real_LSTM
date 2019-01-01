@@ -1,57 +1,80 @@
 from glob import glob
-from pydub import AudioSegment
-import pydub
+from numpy import argmax
+from random import choices
 
-import matplotlib.pyplot as plt
 from scipy import signal
 import scipy.io.wavfile as wave
 
 
 
+hm_channels  = 3    # 3 dominant frequency channels
+channel_size = 2    # frequency, amplitude per channel
+
+max_vals = [1, 1]
+
+
+hm_altered        = 5
+drop_rate_time    = 0.3
+
+
+
+dataset = []
+
+
 for file in glob('*.wav'):
-
-
-    # sound = AudioSegment.from_file(file, format="wav")
-    #
-    #
-    # samples = sound.get_array_of_samples()
-    # mono_channels = []
-    #
-    # for i in range(sound.channels):
-    #   samples_for_current_channel = samples[i::sound.channels]
-    #
-    #   try:
-    #     mono_data = samples_for_current_channel.tobytes()
-    #   except AttributeError:
-    #     mono_data = samples_for_current_channel.tostring()
-    #
-    #   mono_channels.append(
-    #     sound._spawn(mono_data, overrides={"channels": 1})
-    #   )
-    #
-    #
-    # sound_l = AudioSegment.from_mono_audiosegments(mono_channels[0])
-    # sound_r = AudioSegment.from_mono_audiosegments(mono_channels[1])
-    #
-    #
-    # sound_l.export("l.wav", format="wav")
-    # sound_r.export("r.wav", format="wav")
 
     rate, data = wave.read(file)
 
-    ch0 = data[:,0]
-    ch1 = data[:,1]
+    hm_tracks = data.shape[1]
+    tracks = [data[:,tr] for tr in range(hm_tracks)]
+
+    tracks_converted = []
+
+    for track in tracks:
+
+        freqs, times, amps = signal.spectrogram(track)
+
+        track_converted = []
+
+        hm_frequencies = amps.shape[0]
+        hm_timesteps = amps.shape[1]
+
+        for t in range(hm_timesteps):
+            amps_at_t = amps[:,t]
+
+            channels_converted = [[] for _ in range(hm_channels)]
+
+            for ch in range(channel_size):
+                fr_max = argmax(amps_at_t)
+
+                max_freq = freqs[fr_max]
+                that_amp = amps_at_t[fr_max]
+
+                channels_converted[ch].append((max_freq, that_amp))
+
+                amps_at_t = [e for _,e in enumerate(amps_at_t) if _ != fr_max]  # del amps_at_t[fr_max]
+
+            track_converted.append(channels_converted)
+
+        tracks_converted.append(track_converted)
+
+    for _,track in enumerate(tracks_converted):
+
+        for track2 in tracks_converted[_+1:]:
+
+            for __ in range(hm_altered):
+
+                to_drop1 = choices(range(len(track)), k=int(len(track)*drop_rate_time))
+                to_drop2 = choices(range(len(track2)), k=int(len(track2)*drop_rate_time))
+
+                new_track = [e for _,e in enumerate(track) if _ not in to_drop1]
+                new_track2 = [e for _,e in enumerate(track2) if _ not in to_drop2]
 
 
-    freqs1, time1, amps1 = signal.spectrogram(ch0)
-    freqs2, time2, amps2 = signal.spectrogram(ch1)
+                dataset.append((new_track, track2))
+                dataset.append((new_track2, track))
 
-
-
-
-
-    print(freqs1[98])
-
-    print(len(freqs1), len(amps1))
-    print(len(time1), len(time2))
-    print(len(freqs2), len(amps2))
+import pickle
+print(f'Total of {len(dataset)} samples.')
+with open('dataset.pkl', 'wb') as file:
+    pickle.dump(dataset, file)
