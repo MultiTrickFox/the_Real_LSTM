@@ -12,28 +12,28 @@ def run():
 
 
 
-    data_size = 1#1_000
-    batch_size = 1#200
+    data_size = 1_000
+    batch_size = 200
     hm_epochs = 20
     learning_rate = 0.01
     dropout = 0.3
 
 
-    hm_channels  = 2
+    hm_channels  = 3
     channel_size = 2
     storage_size = 2
 
 
     network1 = (               # encoder
-         tuple([10]),           # : intermediate state
-         tuple([8]),            # : global state alter
-         tuple([8, 10]),        # : global decision
+         tuple([2]),           # : intermediate state
+         tuple([2]),            # : global state alter
+         tuple([4, 2]),        # : global decision
     )
 
     network2 = (               # decoder
-         tuple([10, 10]),       # : intermediate state
-         tuple([8,   9]),       # : global state alter
-         tuple([8,  10]),       # : global decision
+         tuple([2,  2]),       # : intermediate state
+         tuple([2,  3]),       # : global state alter
+         tuple([4,  3]),       # : global decision
     )
 
 
@@ -43,7 +43,7 @@ def run():
             storage_size, (network1, network2))
 
     data \
-        = make_data(from_file='samples_*.pkl',
+        = make_data(from_file='dataset*.pkl',
                     data_size=data_size)
 
     optimizer \

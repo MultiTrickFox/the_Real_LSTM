@@ -7,14 +7,17 @@ import scipy.io.wavfile as wave
 
 
 
+
+
 hm_channels  = 3    # 3 dominant frequency channels
 channel_size = 2    # frequency, amplitude per channel
 
-max_vals = [1, 1]
+max_vals = [1, 1]   # frequency, amplitude normalization
 
 
-hm_altered        = 5
-drop_rate_time    = 0.3
+
+hm_altered        = 5       # altered data, timesteps lost.
+drop_rate_time    = 0.3     # likely to be lost.
 
 
 
@@ -42,17 +45,17 @@ for file in glob('*.wav'):
         for t in range(hm_timesteps):
             amps_at_t = amps[:,t]
 
-            channels_converted = [[] for _ in range(hm_channels)]
+            channels_converted = []
 
-            for ch in range(channel_size):
-                fr_max = argmax(amps_at_t)
+            for ch in range(hm_channels):
+                amp_max = argmax(amps_at_t)
 
-                max_freq = freqs[fr_max]
-                that_amp = amps_at_t[fr_max]
+                max_freq = freqs[amp_max]
+                that_amp = amps_at_t[amp_max]
 
-                channels_converted[ch].append((max_freq, that_amp))
+                channels_converted.append((max_freq, that_amp))
 
-                amps_at_t = [e for _,e in enumerate(amps_at_t) if _ != fr_max]  # del amps_at_t[fr_max]
+                amps_at_t = [e for _,e in enumerate(amps_at_t) if _ != amp_max]  # del amps_at_t[fr_max]
 
             track_converted.append(channels_converted)
 
