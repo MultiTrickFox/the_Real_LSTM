@@ -19,6 +19,8 @@ max_vals = [1, 1]   # per data normalization
 hm_altered          = 5     # altered data, timesteps lost.
 drop_rate_time      = 0.3   # likely to be lost.
 
+max_timesteps       = 150
+
 
 
 def run(inp):
@@ -28,53 +30,59 @@ def run(inp):
 
     dataset = []
 
-    tracks = [data[:, tr_nr] for tr_nr in range(data.shape[1])]
-    tracks_converted = []
+    hm_tracks = data.shape[1]
 
-    for track in tracks:
-        track_converted = []
+    if hm_tracks >= 2:
 
-        freqs, times, amps = signal.spectrogram(track)
-        hm_frequencies = amps.shape[0]
-        hm_timesteps = amps.shape[1]
+        tracks = [data[:, tr_nr] for tr_nr in range(hm_tracks)]
+        tracks_converted = []
 
-        for t in range(hm_timesteps):
-            channels_converted = []
+        for track in tracks:
+            track_converted = []
 
-            amps_at_t = normalize(amps[:, t])
+            freqs, times, amps = signal.spectrogram(track)
+            hm_timesteps = amps.shape[1] if amps.shape[0] <= max_timesteps else max_timesteps
+            # hm_frequencies = amps.shape[0]
 
-            for ch in range(hm_channels):
-                amp_max = argmax(amps_at_t)
+            for t in range(hm_timesteps):
+                channels_converted = []
 
-                max_freq = freqs[amp_max]
-                that_amp = amps_at_t[amp_max]
+                amps_at_t = normalize(amps[:, t])
 
-                channels_converted.append((max_freq, that_amp))
+                for ch in range(hm_channels):
+                    amp_max = argmax(amps_at_t)
 
-                amps_at_t = [e for _,e in enumerate(amps_at_t) if _ != amp_max]  # del amps_at_t[fr_max]
+                    max_freq = freqs[amp_max]
+                    that_amp = amps_at_t[amp_max]
 
-            track_converted.append(channels_converted)
-        tracks_converted.append(track_converted)
+                    channels_converted.append((max_freq, that_amp))
 
-    for _,track in enumerate(tracks_converted):
+                    amps_at_t = [e for _,e in enumerate(amps_at_t) if _ != amp_max]  # del amps_at_t[fr_max]
 
-        for track2 in tracks_converted[_+1:]:
+                track_converted.append(channels_converted)
+            tracks_converted.append(track_converted)
 
-            for __ in range(hm_altered):
+        for _,track in enumerate(tracks_converted):
 
-                to_drop1 = choices(range(len(track)), k=int(len(track)*drop_rate_time))
-                to_drop2 = choices(range(len(track2)), k=int(len(track2)*drop_rate_time))
+            for track2 in tracks_converted[_+1:]:
 
-                new_track = [e for _,e in enumerate(track) if _ not in to_drop1]
-                new_track2 = [e for _,e in enumerate(track2) if _ not in to_drop2]
+                for __ in range(hm_altered):
 
-                dataset.append((new_track, track2))
-                dataset.append((new_track2, track))
+                    to_drop1 = choices(range(len(track)), k=int(len(track)*drop_rate_time))
+                    to_drop2 = choices(range(len(track2)), k=int(len(track2)*drop_rate_time))
+
+                    new_track = [e for _,e in enumerate(track) if _ not in to_drop1]
+                    new_track2 = [e for _,e in enumerate(track2) if _ not in to_drop2]
+
+                    dataset.append((new_track, track2))
+                    dataset.append((new_track2, track))
 
 
-    print(f'Total of {len(dataset)} samples.')
-    with open('dataset'+str(id)+'.pkl', 'wb') as file:
-        pickle.dump(dataset, file)
+        print(f'Total of {len(dataset)} samples.')
+        with open('dataset'+str(id)+'.pkl', 'wb') as file:
+            pickle.dump(dataset, file)
+
+    else: print(f'insufficient tracks in file {file}')
 
 def normalize(v):
     norm = n(v)
