@@ -12,8 +12,8 @@ def run():
 
 
 
-    data_size = 1#1_000     # todo : change us after code cleanup.
-    batch_size = 1#200
+    data_size = 1_000     
+    batch_size = 200
     hm_epochs = 20
     learning_rate = 0.01
     dropout = 0.3
