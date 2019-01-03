@@ -12,8 +12,8 @@ def run():
 
 
 
-    data_size = 1_000     
-    batch_size = 200
+    data_size = 50     
+    batch_size = 50
     hm_epochs = 20
     learning_rate = 0.01
     dropout = 0.3
@@ -70,7 +70,7 @@ def run():
             epoch_loss += loss
 
         data.shuffle()
-        print(f'epoch {_} completed, loss: {round(epoch_loss, 3)}')
+        print(f'\n epoch {_} completed, loss: {round(epoch_loss, 3)}')
         losses.append(epoch_loss)
 
     save_session(model, optimizer)
@@ -109,6 +109,7 @@ def process_sample(data):
     loss = make_grads(output, target)
     grads = get_grads(model)
 
+    print('\', end='')
     return grads, loss
 
 
