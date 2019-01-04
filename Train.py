@@ -12,9 +12,9 @@ def run():
 
 
 
-    data_size = 50     
-    batch_size = 50
-    hm_epochs = 20
+    data_size = 500
+    batch_size = 25
+    hm_epochs = 10
     learning_rate = 0.01
     dropout = 0.3
 
@@ -45,7 +45,7 @@ def run():
     data \
         = make_data(from_file='dataset*.pkl',
                     data_size=data_size)
-
+    
     optimizer \
         = make_optimizer(model,
                          learning_rate,
@@ -56,7 +56,7 @@ def run():
         model_load, opt_load = load_session()
         if model_load: model = model_load
         if opt_load: optimizer = opt_load
-
+    
 
     losses = []
     for _ in range(hm_epochs):
@@ -96,6 +96,7 @@ def process_batch(model, batch, dropout):
         set_grads(model, gradient)
         total_loss += loss
 
+    print('/', end='', flush=True)
     return model, float(total_loss)
 
 
@@ -109,7 +110,6 @@ def process_sample(data):
     loss = make_grads(output, target)
     grads = get_grads(model)
 
-    print('\', end='')
     return grads, loss
 
 
@@ -128,10 +128,10 @@ def get_grads(model):
 
 def set_grads(model, grads):
     for _,param in enumerate(model.params):
-        if param.grad is None:
-            param.grad = grads[_]
-        else:
+        if param.grad is not None:
             param.grad += grads[_]
+        else:
+            param.grad = grads[_]
 
 
 

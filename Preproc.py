@@ -11,7 +11,7 @@ from multiprocessing import Pool, cpu_count
 
 
 
-hm_channels  = 3    # 3 dominant frequency channels
+hm_channels  = 3    # dominant frequency channels
 
 channel_size = 2    # frequency, amplitude per channel
 max_vals = [1, 1]   # per data normalization
@@ -19,7 +19,7 @@ max_vals = [1, 1]   # per data normalization
 hm_altered          = 5     # altered data, timesteps lost.
 drop_rate_time      = 0.3   # likely to be lost.
 
-max_timesteps       = 150
+max_timesteps       = 500   # memory limitations :(
 
 
 
@@ -41,26 +41,32 @@ def run(inp):
             track_converted = []
 
             freqs, times, amps = signal.spectrogram(track)
-            hm_timesteps = amps.shape[1] if amps.shape[0] <= max_timesteps else max_timesteps
+            hm_timesteps = amps.shape[1] if amps.shape[1] <= max_timesteps else max_timesteps
             # hm_frequencies = amps.shape[0]
 
-            for t in range(hm_timesteps):
-                channels_converted = []
+            amps = normalize(amps)
 
-                amps_at_t = normalize(amps[:, t])
+            for i in range(int(amps.shape[1]/hm_timesteps)):
 
-                for ch in range(hm_channels):
-                    amp_max = argmax(amps_at_t)
+                amps_this = amps[:,int(i*max_timesteps):int((i+1)*max_timesteps)]
 
-                    max_freq = freqs[amp_max]
-                    that_amp = amps_at_t[amp_max]
+                for t in range(max_timesteps):
+                    channels_converted = []
 
-                    channels_converted.append((max_freq, that_amp))
+                    amps_at_t = amps_this[:, t]
 
-                    amps_at_t = [e for _,e in enumerate(amps_at_t) if _ != amp_max]  # del amps_at_t[fr_max]
+                    for ch in range(hm_channels):
+                        amp_max = argmax(amps_at_t)
 
-                track_converted.append(channels_converted)
-            tracks_converted.append(track_converted)
+                        max_freq = freqs[amp_max]
+                        that_amp = amps_at_t[amp_max]
+
+                        channels_converted.append((max_freq, that_amp))
+
+                        amps_at_t = [e for _,e in enumerate(amps_at_t) if _ != amp_max]  # del amps_at_t[fr_max]
+
+                    track_converted.append(channels_converted)
+                tracks_converted.append(track_converted)
 
         for _,track in enumerate(tracks_converted):
 
@@ -78,7 +84,7 @@ def run(inp):
                     dataset.append((new_track2, track))
 
 
-        print(f'Total of {len(dataset)} samples.')
+        print(f'obtained {len(dataset)} samples.')
         with open('dataset'+str(id)+'.pkl', 'wb') as file:
             pickle.dump(dataset, file)
 
