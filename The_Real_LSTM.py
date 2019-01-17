@@ -1,9 +1,8 @@
 from torch import zeros, ones, zeros_like, ones_like, randn
-from torch import matmul, sigmoid, tanh, relu, exp
+from torch import matmul, sigmoid, tanh, relu, exp, sqrt
 from torch import Tensor, stack                            ; import random
 
 
-max_prop_time = 55
 
 
 
@@ -104,6 +103,7 @@ def create_module(module_layers, input_sizes):
         layer['uk'] = randn([layer_size, layer_size], requires_grad=True)
         layer['bk'] = randn([1, layer_size], requires_grad=True)
 
+        for key,value in layer.items() : layer[key] = value / sqrt(layer_size);
 
         module.append(layer)
 
@@ -310,6 +310,10 @@ def propogate_model(model, sequence, context=None, gen_seed=None, gen_iterations
     return produced_outputs
 
 
+
+from Preproc import max_timesteps
+
+
 # math ops
 
 
@@ -317,7 +321,7 @@ def pre_attention(produced_outputs):
     out_keys = []
     out_values = []
 
-    for t in range(max_prop_time):
+    for t in range(max_timesteps):
         try:
             out_keys.append(stack(produced_outputs[t][0], 0))
             out_values.append(stack(produced_outputs[t][-1], 0))

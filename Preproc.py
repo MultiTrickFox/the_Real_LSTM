@@ -16,10 +16,10 @@ hm_channels  = 3    # dominant frequency channels
 channel_size = 2    # frequency, amplitude per channel
 max_vals = [1, 1]   # per data normalization
 
-hm_altered          = 5     # altered data, timesteps lost.
-drop_rate_time      = 0.3   # likely to be lost.
+hm_altered          = 5       # altered data, timesteps lost.
+drop_rate           = 0.2     # likely to be lost.
 
-max_timesteps       = 500   # memory limitations :(
+max_timesteps       = 20_000  # memory limitations :(
 
 
 
@@ -41,32 +41,29 @@ def run(inp):
             track_converted = []
 
             freqs, times, amps = signal.spectrogram(track)
-            hm_timesteps = amps.shape[1] if amps.shape[1] <= max_timesteps else max_timesteps
+            hm_timesteps = amps.shape[1]
+            if hm_timesteps > max_timesteps: hm_timesteps = max_timesteps
             # hm_frequencies = amps.shape[0]
 
             amps = normalize(amps)
 
-            for i in range(int(amps.shape[1]/hm_timesteps)):
+            for t in range(hm_timesteps):
+                channels_converted = []
 
-                amps_this = amps[:,int(i*max_timesteps):int((i+1)*max_timesteps)]
+                amps_at_t = amps[:, t]
 
-                for t in range(max_timesteps):
-                    channels_converted = []
+                for ch in range(hm_channels):
+                    amp_max = argmax(amps_at_t)
 
-                    amps_at_t = amps_this[:, t]
+                    max_freq = freqs[amp_max]
+                    that_amp = amps_at_t[amp_max]
 
-                    for ch in range(hm_channels):
-                        amp_max = argmax(amps_at_t)
+                    channels_converted.append((max_freq, that_amp))
 
-                        max_freq = freqs[amp_max]
-                        that_amp = amps_at_t[amp_max]
+                    amps_at_t = [e for _,e in enumerate(amps_at_t) if _ != amp_max]  # del amps_at_t[fr_max]
 
-                        channels_converted.append((max_freq, that_amp))
-
-                        amps_at_t = [e for _,e in enumerate(amps_at_t) if _ != amp_max]  # del amps_at_t[fr_max]
-
-                    track_converted.append(channels_converted)
-                tracks_converted.append(track_converted)
+                track_converted.append(channels_converted)
+            tracks_converted.append(track_converted)
 
         for _,track in enumerate(tracks_converted):
 
@@ -74,8 +71,8 @@ def run(inp):
 
                 for __ in range(hm_altered):
 
-                    to_drop1 = choices(range(len(track)), k=int(len(track)*drop_rate_time))
-                    to_drop2 = choices(range(len(track2)), k=int(len(track2)*drop_rate_time))
+                    to_drop1 = choices(range(len(track)), k=int(len(track) * drop_rate))
+                    to_drop2 = choices(range(len(track2)), k=int(len(track2) * drop_rate))
 
                     new_track = [e for _,e in enumerate(track) if _ not in to_drop1]
                     new_track2 = [e for _,e in enumerate(track2) if _ not in to_drop2]
