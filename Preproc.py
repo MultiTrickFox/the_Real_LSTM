@@ -11,15 +11,15 @@ from multiprocessing import Pool, cpu_count
 
 
 
-hm_channels  = 3    # dominant frequency channels
+hm_channels  = 5    # max amount of notes
 
-channel_size = 2    # frequency, amplitude per channel
+channel_size = 2    # frequency & amplitude data per channel
 max_vals = [1, 1]   # per data normalization
 
 hm_altered          = 5       # altered data, timesteps lost.
 drop_rate           = 0.2     # likely to be lost.
 
-max_timesteps       = 20_000  # memory limitations :(
+max_timesteps       = 25_000  # memory limitations :(
 
 
 

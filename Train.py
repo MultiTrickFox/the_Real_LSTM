@@ -12,14 +12,14 @@ def run():
 
 
 
-    data_size = 500
+    data_size = 450
     batch_size = 25
     hm_epochs = 10
     learning_rate = 0.01
     dropout = 0.3
 
 
-    hm_channels  = 3
+    hm_channels  = 5
     channel_size = 2
     storage_size = 2
 
@@ -105,7 +105,7 @@ from The_Real_LSTM import propogate_model as forw_prop
 
 def process_sample(data):
     model, input, target, dropout = data
-    
+
     output = forw_prop(model, input, gen_iterations=len(target), dropout=dropout)
     loss = make_grads(output, target)
     grads = get_grads(model)
