@@ -105,7 +105,7 @@ from The_Real_LSTM import propogate_model as forw_prop
 
 def process_sample(data):
     model, input, target, dropout = data
-
+    
     output = forw_prop(model, input, gen_iterations=len(target), dropout=dropout)
     loss = make_grads(output, target)
     grads = get_grads(model)

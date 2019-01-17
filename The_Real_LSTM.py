@@ -1,8 +1,9 @@
 from torch import zeros, ones, zeros_like, ones_like, randn
-from torch import matmul, sigmoid, tanh, relu, exp, sqrt
+from torch import matmul, sigmoid, tanh, relu, exp
 from torch import Tensor, stack                            ; import random
 
-
+from math import sqrt
+from torch import no_grad
 
 
 
@@ -103,7 +104,8 @@ def create_module(module_layers, input_sizes):
         layer['uk'] = randn([layer_size, layer_size], requires_grad=True)
         layer['bk'] = randn([1, layer_size], requires_grad=True)
 
-        for key,value in layer.items() : layer[key] = value / sqrt(layer_size);
+        with no_grad():
+            for key,value in layer.items() : layer[key] = value / sqrt(layer_size);
 
         module.append(layer)
 
