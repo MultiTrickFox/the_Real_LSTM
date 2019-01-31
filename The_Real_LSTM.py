@@ -2,9 +2,11 @@ from torch import zeros, ones, zeros_like, ones_like, randn
 from torch import matmul, sigmoid, tanh, relu, exp
 from torch import Tensor, stack                            ; import random
 
-from math import sqrt
 from torch import no_grad
+from math import sqrt
 
+from Preproc import max_timesteps, drop_rate
+max_timesteps *=    1-drop_rate
 
 
 def create_networks(network_structs, vector_size, storage_size, hm_vectors):
@@ -311,9 +313,6 @@ def propogate_model(model, sequence, context=None, gen_seed=None, gen_iterations
 
     return produced_outputs
 
-
-
-from Preproc import max_timesteps
 
 
 # math ops

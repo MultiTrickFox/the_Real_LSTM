@@ -11,15 +11,15 @@ from multiprocessing import Pool, cpu_count
 
 
 
-hm_channels  = 5    # max amount of notes
+hm_channels  = 3    # hm waves to track
 
-channel_size = 2    # frequency & amplitude data per channel
+channel_size = 2    # hz & db per wave
 max_vals = [1, 1]   # per data normalization
 
 hm_altered          = 5       # altered data, timesteps lost.
-drop_rate           = 0.2     # likely to be lost.
+drop_rate           = 0.75     # likely to be lost.
 
-max_timesteps       = 25_000  # memory limitations :(
+max_timesteps       = 1_000   # memory limitations :(
 
 
 
@@ -41,29 +41,31 @@ def run(inp):
             track_converted = []
 
             freqs, times, amps = signal.spectrogram(track)
+            # print(amps.shape[1], amps.shape[0])
             hm_timesteps = amps.shape[1]
-            if hm_timesteps > max_timesteps: hm_timesteps = max_timesteps
             # hm_frequencies = amps.shape[0]
 
             amps = normalize(amps)
 
-            for t in range(hm_timesteps):
-                channels_converted = []
+            for batch in range(int(hm_timesteps/max_timesteps)):
+                for t in range(max_timesteps):
 
-                amps_at_t = amps[:, t]
+                    channels_converted = []
 
-                for ch in range(hm_channels):
-                    amp_max = argmax(amps_at_t)
+                    amps_at_t = amps[:,batch*max_timesteps:(batch+1)*max_timesteps][:, t]
 
-                    max_freq = freqs[amp_max]
-                    that_amp = amps_at_t[amp_max]
+                    for ch in range(hm_channels):
+                        amp_max = argmax(amps_at_t)
 
-                    channels_converted.append((max_freq, that_amp))
+                        max_freq = freqs[amp_max]
+                        that_amp = amps_at_t[amp_max]
 
-                    amps_at_t = [e for _,e in enumerate(amps_at_t) if _ != amp_max]  # del amps_at_t[fr_max]
+                        channels_converted.append((max_freq, that_amp))
 
-                track_converted.append(channels_converted)
-            tracks_converted.append(track_converted)
+                        amps_at_t = [e for _,e in enumerate(amps_at_t) if _ != amp_max]  # del amps_at_t[fr_max]
+
+                    track_converted.append(channels_converted)
+                tracks_converted.append(track_converted)
 
         for _,track in enumerate(tracks_converted):
 

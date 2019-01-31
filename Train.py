@@ -19,21 +19,21 @@ def run():
     dropout = 0.3
 
 
-    hm_channels  = 5
+    hm_channels  = 3
     channel_size = 2
-    storage_size = 2
+    storage_size = 5
 
 
     network1 = (               # encoder
-         tuple([2]),           # : intermediate state
-         tuple([2]),           # : global state alter
-         tuple([4, 2]),        # : global decision
+         tuple([]),            # : intermediate state
+         tuple([]),            # : global state alter
+         tuple([4, 3]),        # : global decision
     )
 
     network2 = (               # decoder
-         tuple([2,  2]),       # : intermediate state
-         tuple([2,  3]),       # : global state alter
-         tuple([4,  3]),       # : global decision
+         tuple([5,  5]),       # : intermediate state
+         tuple([5,  5]),       # : global state alter
+         tuple([4,  3, 2, 2]), # : global decision
     )
 
 
