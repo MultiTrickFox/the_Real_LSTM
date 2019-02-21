@@ -2,9 +2,13 @@ import The_Real_LSTM as gstm
 
 from torch import optim
 from torch import save, load
+from torch import cuda, set_default_tensor_type
 
 from torch.utils.data import Dataset, DataLoader
 from torch.nn import Module ; from random import shuffle
+
+set_default_tensor_type('torch.cuda.FloatTensor' if cuda.is_available() else 'torch.FloatTensor')
+
 
 
 
@@ -70,11 +74,11 @@ class Dataset(Dataset):
             self.hm_channels  = hm_channels
             self.channel_size = channel_size
 
-            self.data_fn = lambda : [random.random() for _ in range(channel_size)]
-            self.len_fn  = lambda :  random.randint(min_seq_len,max_seq_len)
-            self.generate= lambda : [[self.data_fn() for e in range(self.hm_channels)] for _ in range(self.len_fn())]
+            data_fn = lambda : [random.random() for _ in range(channel_size)]
+            len_fn  = lambda :  random.randint(min_seq_len,max_seq_len)
+            generate= lambda : [[data_fn() for e in range(self.hm_channels)] for _ in range(len_fn())]
 
-            self.data = [(self.generate(), self.generate())
+            self.data = [(generate(), generate())
                         for _ in range(hm_data)]
 
         self.shuffle = lambda : shuffle(self.data)

@@ -12,8 +12,8 @@ def run():
 
 
 
-    data_size = 450
-    batch_size = 25
+    data_size = 50
+    batch_size = 10
     hm_epochs = 10
     learning_rate = 0.01
     dropout = 0.3
@@ -43,9 +43,9 @@ def run():
             storage_size, (network1, network2))
 
     data \
-        = make_data(from_file='dataset*.pkl',
+        = make_data(from_file='data*.pkl',
                     data_size=data_size)
-    
+
     optimizer \
         = make_optimizer(model,
                          learning_rate,
@@ -56,7 +56,7 @@ def run():
         model_load, opt_load = load_session()
         if model_load: model = model_load
         if opt_load: optimizer = opt_load
-    
+
 
     losses = []
     for _ in range(hm_epochs):

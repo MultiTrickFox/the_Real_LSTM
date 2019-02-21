@@ -2,8 +2,8 @@
 from VanillaV2 import *
 
 
-hm_channels  =  2
-channel_size = 15
+hm_channels  =  4
+channel_size = 13
 storage_size = 10
 
 
@@ -23,7 +23,7 @@ network2 = (               # decoder
 
 
 learning_rate = 0.01
-hm_epochs = 2
+hm_epochs = 5
 
 
 
@@ -38,7 +38,7 @@ data \
     = make_data(hm_channels, channel_size,
     min_seq_len=25,
     max_seq_len=45,
-    data_size=110)
+    data_size=50)
 
 optimizer \
     = make_optimizer(model,
@@ -76,7 +76,7 @@ model, optimizer = load_session()
 for i in range(1):
     loss = 0
 
-    for batch in data.batchify(50):
+    for batch in data.batchify(5):
 
         for (input, target) in batch:
 
@@ -104,7 +104,7 @@ losses = ([], [], [])
 for i in range(hm_epochs):
     loss = 0
 
-    for batch in data.batchify(50):
+    for batch in data.batchify(5):
         for (input, target) in batch:
 
             output = propogate(model, input, target_length=len(target),
@@ -115,7 +115,7 @@ for i in range(hm_epochs):
         #     print(param.grad)
 
         # for name, param in zip(model.names, model.params):
-        #     print(f'name : {name} , grad : {param.grad}')
+        #     print(f'name : {name} , grad : {sum(sum(param.grad))}')
 
         take_step(optimizer)
 
